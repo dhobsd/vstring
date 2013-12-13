@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2005, 2013 Devon H. O'Dell <devon.odell@gmail.com>
+ * Copyright 2003-2013 Devon H. O'Dell <devon.odell@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
