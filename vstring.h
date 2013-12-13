@@ -33,7 +33,8 @@
 
 typedef struct vstring {
 	char		*contents;
-	uint64_t	flags;
+	uint32_t	type;
+	uint32_t	flags;
 	uint64_t	pointer;
 	uint64_t	size;
 } vstring;
@@ -42,15 +43,14 @@ enum {
 	VS_ALLOCSIZE = 256,
 };
 
-/* Bottom 32 bits are for types. */
 enum vstring_type {
-	VS_TYPE_DYNAMIC = 1,
-	VS_TYPE_STATIC	= 1 << 1,
+	VS_TYPE_DYNAMIC		= 1,
+	VS_TYPE_STATIC		= 1 << 1,
+	VS_TYPE_GROWABLE	= 1 << 2,
 };
 
-/* ...and top bits are for flags. */
 enum vstring_flags {
-	VS_NEEDSFREE	= 1 << 33, /* Set if the API needs to free the vs itself */
+	VS_NEEDSFREE	= 1, /* Set if the API needs to free the vs itself */
 };
 
 static inline vstring *
@@ -68,9 +68,15 @@ vs_init(vstring *vs, enum vstring_type type, char *buf, size_t size)
 			return NULL;
 		}
 
+		if (buf != NULL && size > 0) {
+			vs->contents = buf;
+			vs->size = size;
+		}
+
 		break;
 	
 	case VS_TYPE_STATIC:
+	case VS_TYPE_GROWABLE:
 		if (buf == NULL || size == 0) {
 			return NULL;
 		}
@@ -85,7 +91,7 @@ vs_init(vstring *vs, enum vstring_type type, char *buf, size_t size)
 		break;
 	}
 
-	vs->flags |= type;
+	vs->type |= type;
 	return vs;
 }
 
@@ -93,7 +99,7 @@ static inline void
 vs_deinit(vstring *vs)
 {
 
-	if ((vs->flags & VS_TYPE_DYNAMIC) && vs->contents != NULL) {
+	if ((vs->type & VS_TYPE_DYNAMIC) && vs->contents != NULL) {
 		free(vs->contents);
 	}
 
@@ -131,19 +137,29 @@ vs_resize(vstring *vs, size_t hint)
 			size = hint * 2;
 		}
 
-		/* Upgrade to a dynamic string. */
-		if (vs->flags & VS_TYPE_STATIC) {
-			vs->flags &= ~VS_TYPE_STATIC;
-			vs->flags |= VS_TYPE_DYNAMIC;
+		switch (vs->type) {
+		case VS_TYPE_STATIC:
+			/* Static-backed assets cannot be resized */
+			return NULL;
+
+		case VS_TYPE_GROWABLE:
+			/* Upgrade to a dynamic string. */
+			vs->type &= ~VS_TYPE_GROWABLE;
+			vs->type |= VS_TYPE_DYNAMIC;
 
 			vs->contents = calloc(1, size);
 			vs->size = size;
-		} else {
+
+			break;
+
+		case VS_TYPE_DYNAMIC:
 			tmp = realloc(vs->contents, size * 2);
 			if (tmp != NULL) {
 				vs->contents = tmp;
 				vs->size = size;
 			}
+
+			break;
 		}
 	}
 
@@ -168,6 +184,10 @@ vs_push(vstring *vs, char c)
 static inline bool
 vs_pushstr(vstring *vs, const char *s, uint64_t len)
 {
+
+	if (s == NULL || len == 0) {
+		return false;
+	}
 
 	if (vs->pointer + len >= vs->size) {
 		if (vs_resize(vs, vs->size + len) == NULL) {
