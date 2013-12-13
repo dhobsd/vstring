@@ -8,8 +8,8 @@ static and dynamic buffers (static buffers are upgraded to dynamic buffers
 as needed), and can efficiently parse signed and unsigned integers.
 
 The API is intended to promote safety in string manipulation as well as to
-provide a means to avoid hugely expensive printf(3)-family calls for common
-operations.
+provide a means to avoid hugely expensive `printf(3)`-family calls for
+common operations.
 
 ## API Usage
 
