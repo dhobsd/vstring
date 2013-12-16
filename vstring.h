@@ -222,7 +222,7 @@ vs_pushuint(vstring *vs, uint64_t n)
 			buf[s] ^= buf[e];
 		}
 
-		vs_pushstr(vs, buf, l);
+		vs_pushstr(vs, buf, l + 1);
 	} else {
 		vs_push(vs, '0');
 	}
@@ -257,7 +257,7 @@ vs_pushint(vstring *vs, int64_t n)
 			buf[s] ^= buf[e];
 		}
 
-		vs_pushstr(vs, buf, l);
+		vs_pushstr(vs, buf, l + 1);
 	} else {
 		vs_push(vs, '0');
 	}
