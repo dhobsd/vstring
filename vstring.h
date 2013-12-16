@@ -195,7 +195,7 @@ vs_pushstr(vstring *vs, const char *s, uint64_t len)
 		}
 	}
 
-	memmove(vs->contents, s, len);
+	memmove(&vs->contents[vs->pointer], s, len);
 	vs->pointer += len;
 	return true;
 }
