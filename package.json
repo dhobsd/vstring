@@ -1,0 +1,20 @@
+{
+  "name": "vstring",
+  "version": "0.0.1",
+  "description": "Vstring is a simple string building API for the C programming language",
+  "repo": "dhobsd/vstring",
+  "src": [
+    "vstring.h"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:dhobsd/vstring.git"
+  },
+  "keywords": [
+    "buffer", "string"
+  ],
+  "author": "Devon H. O'Dell",
+  "bugs": {
+    "url": "https://github.com/dhobsd/vstring/issues"
+  }
+}
