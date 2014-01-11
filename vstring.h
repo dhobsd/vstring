@@ -57,11 +57,12 @@ static inline vstring *
 vs_init(vstring *vs, enum vstring_type type, char *buf, size_t size)
 {
 
-	switch (type) {
-	case VS_TYPE_DYNAMIC:
+	if ((type & VS_TYPE_DYNAMIC)) {
 		if (vs == NULL) {
 			vs = calloc(1, sizeof (*vs));
 			vs->flags |= VS_NEEDSFREE;
+		} else {
+			memset(vs, 0, sizeof (*vs));
 		}
 
 		if (vs == NULL) {
@@ -72,11 +73,7 @@ vs_init(vstring *vs, enum vstring_type type, char *buf, size_t size)
 			vs->contents = buf;
 			vs->size = size;
 		}
-
-		break;
-	
-	case VS_TYPE_STATIC:
-	case VS_TYPE_GROWABLE:
+	} else if ((type & VS_TYPE_STATIC) || (type & VS_TYPE_GROWABLE)) {
 		if (buf == NULL || size == 0) {
 			return NULL;
 		}
@@ -84,14 +81,15 @@ vs_init(vstring *vs, enum vstring_type type, char *buf, size_t size)
 		if (vs == NULL) {
 			vs = calloc(1, sizeof (*vs));
 			vs->flags |= VS_NEEDSFREE;
+		} else {
+			memset(vs, 0, sizeof (*vs));
 		}
 
 		vs->contents = buf;
 		vs->size = size;
-		break;
 	}
 
-	vs->type |= type;
+	vs->type = type;
 	return vs;
 }
 
@@ -137,29 +135,22 @@ vs_resize(vstring *vs, size_t hint)
 			size = hint * 2;
 		}
 
-		switch (vs->type) {
-		case VS_TYPE_STATIC:
+		if ((vs->type & VS_TYPE_STATIC)) {
 			/* Static-backed assets cannot be resized */
 			return NULL;
-
-		case VS_TYPE_GROWABLE:
+		} else if ((vs->type & VS_TYPE_GROWABLE)) {
 			/* Upgrade to a dynamic string. */
 			vs->type &= ~VS_TYPE_GROWABLE;
 			vs->type |= VS_TYPE_DYNAMIC;
 
 			vs->contents = calloc(1, size);
 			vs->size = size;
-
-			break;
-
-		case VS_TYPE_DYNAMIC:
+		} else if ((vs->type & VS_TYPE_DYNAMIC)) {
 			tmp = realloc(vs->contents, size * 2);
 			if (tmp != NULL) {
 				vs->contents = tmp;
 				vs->size = size;
 			}
-
-			break;
 		}
 	}
 
@@ -240,6 +231,10 @@ vs_pushint(vstring *vs, int64_t n)
 	if (n != 0) {
 		s = e = 0;
 		t = n;
+
+		if (t < 0) {
+			n = -n;
+		}
 
 		while (n != 0) {
 			buf[e++] = '0' + (n % 10);
