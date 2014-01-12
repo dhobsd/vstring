@@ -1,4 +1,6 @@
 /*
+ * vstring: https://github.com/dhobsd/vstring
+ *
  * Copyright 2003-2013 Devon H. O'Dell <devon.odell@gmail.com>
  * All rights reserved.
  *
