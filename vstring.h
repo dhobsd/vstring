@@ -213,12 +213,10 @@ vs_pushuint(vstring *vs, uint64_t n)
 			buf[s] ^= buf[e];
 		}
 
-		vs_pushstr(vs, buf, l + 1);
+		return vs_pushstr(vs, buf, l + 1);
 	} else {
-		vs_push(vs, '0');
+		return vs_push(vs, '0');
 	}
-
-	return true;
 }
 
 static inline bool
@@ -252,12 +250,44 @@ vs_pushint(vstring *vs, int64_t n)
 			buf[s] ^= buf[e];
 		}
 
-		vs_pushstr(vs, buf, l + 1);
+		return vs_pushstr(vs, buf, l + 1);
 	} else {
-		vs_push(vs, '0');
+		return vs_push(vs, '0');
+	}
+}
+
+static inline bool
+vs_padint(vstring *vs, uint64_t n, int places)
+{
+	char buf[20];
+	int s, e, l;
+
+	if (places > 19) {
+		return false;
 	}
 
-	return true;
+	s = e = 0;
+	while (n != 0) {
+		buf[e++] = '0' + (n % 10);
+		n /= 10;
+
+		if (e == places) {
+			break;
+		}
+	}
+
+	n = places - e;
+	while (n--) {
+		buf[e++] = '0';
+	}
+
+	for (l = --e; e > s; --e, ++s) {
+		buf[s] ^= buf[e];
+		buf[e] ^= buf[s];
+		buf[s] ^= buf[e];
+	}
+
+	return vs_pushstr(vs, buf, l + 1);
 }
 
 static inline bool
