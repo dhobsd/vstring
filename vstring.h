@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 typedef struct vstring {
 	char		*contents;
@@ -290,6 +291,23 @@ vs_padint(vstring *vs, uint64_t n, int places)
 	}
 
 	return vs_pushstr(vs, buf, l + 1);
+}
+
+static inline bool
+vs_pushdouble(vstring *vs, double n)
+{
+	double modf_int, modf_frac;
+
+	if (n < 0) {
+	    n = -n;
+	    if (!vs_push(vs, '-'))
+	    	return false;
+	}
+
+	modf_frac = modf(n, &modf_int);
+	return (vs_pushuint(vs, (uint64_t)modf_int) &&
+	    vs_push(vs, '.') &&
+	    vs_padint(vs, (uint64_t)(1e9*modf_frac), 9));
 }
 
 static inline bool
