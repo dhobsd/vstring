@@ -1,6 +1,6 @@
 {
   "name": "vstring",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Vstring is a simple string building API for the C programming language",
   "repo": "dhobsd/vstring",
   "src": [
