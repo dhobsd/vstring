@@ -19,6 +19,11 @@ opaque (because opaque types suck), but it is not recommended to play with
 the type outside of the API. (If you find the need to do this, fix / extend
 the API and send a pull request!)
 
+## Compiling
+
+Simply `#include <vstring.h>`. If you use `vs_pushdouble`, you may need to 
+link in the system's math library if that is not part of libc.
+
 ### vstring
 
 The `vstring` type is defined as follows:
@@ -169,6 +174,23 @@ successful, `false` otherwise.
 
 This can function fail for the same reasons as `vs_push` and `vs_pushstr`.
 
+### Appending FP Numbers
+
+```c
+static inline bool
+vs_pushdouble(vstring *vs, double n)
+```
+
+Stringifies the representation of `n` and appends that to the buffer pointed
+to by `*vs`. It works by using `modf(3)` to retrieve the whole integer part
+and the fractional part. The fractional part is padded to 9 spaces for no good
+reason. `NAN`, positive and negative infinity, and negative zero is handled.
+
+Returns `true` if successful, `false` otherwise.
+
+This function fails when any concatenation fails, or if the floating point
+number passed in is a subnormal FP number.
+
 ### Creating a C String
 
 ```c
@@ -179,6 +201,9 @@ vs_finalize(vstring *vs)
 To make the buffer managed by `*vs` a valid C string, `vs_finalize` must be
 called. This function is a convenience wrapper around `vs_push(vs, '\0')`
 and can fail for the same reasons.
+
+To get the length of the resulting C string without calling `strlen(3)`, you
+may use `vs_len(vs) - 1`.
 
 ### Getting the contents of a vstring
 

@@ -183,7 +183,7 @@ vs_pushstr(vstring *vs, const char *s, uint64_t len)
 		return false;
 	}
 
-	if (vs->pointer + len >= vs->size) {
+	if (vs->pointer + len > vs->size) {
 		if (vs_resize(vs, vs->size + len) == NULL) {
 			return false;
 		}
@@ -297,17 +297,36 @@ static inline bool
 vs_pushdouble(vstring *vs, double n)
 {
 	double modf_int, modf_frac;
+	int fpclass;
 
-	if (n < 0) {
-	    n = -n;
-	    if (!vs_push(vs, '-'))
-	    	return false;
+	fpclass = fpclassify(n);
+	switch (fpclass) {
+	case FP_NAN:
+		return vs_pushstr(vs, "NaN", 3);
+
+	case FP_INFINITE:
+		if (n == INFINITY) {
+			return vs_pushstr(vs, "inf", 3);
+		}
+
+		return vs_pushstr(vs, "-inf", 4);
+
+	case FP_NORMAL:
+	case FP_ZERO:
+		if (signbit(n)) {
+			if (!vs_push(vs, '-')) {
+				return false;
+			}
+		}
+		modf_frac = modf(n, &modf_int);
+		return (vs_pushuint(vs, (uint64_t)modf_int) &&
+		    vs_push(vs, '.') &&
+		    vs_padint(vs, (uint64_t)(1e9*modf_frac), 9));
+
+	case FP_SUBNORMAL:
+	default:
+		return false;
 	}
-
-	modf_frac = modf(n, &modf_int);
-	return (vs_pushuint(vs, (uint64_t)modf_int) &&
-	    vs_push(vs, '.') &&
-	    vs_padint(vs, (uint64_t)(1e9*modf_frac), 9));
 }
 
 static inline bool
