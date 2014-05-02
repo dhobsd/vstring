@@ -245,5 +245,9 @@ call to `vs_len`.
 
 ## Future Improvements
 
-It would be nice to allow custom `malloc(3)` implementations to be used
-with the `vstring` API.
+`vs_pushdouble` probably isn't correct. We probably want to change the API to
+allow expression of the number of significant figures wanted. We may also want
+to specify minimum or maximum padding values (with no padding being an option
+for maximum value).
+
+If you have additional suggestions, file an issue or send a pull request!
