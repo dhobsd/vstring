@@ -54,7 +54,7 @@ The `size` member contains the total capacity of the `contents` buffer.
 
 ### Types
 
-Three types of `vstring`s exist:
+Three sorts of `vstring`s exist:
 
  * Static strings (`VS_TYPE_STATIC`): these strings are backed by a static
  buffer and cannot grow.
@@ -66,10 +66,6 @@ Three types of `vstring`s exist:
  * Dynamic strings (`VS_TYPE_DYNAMIC`): these strings are backed by a
  dynamically allocated buffer and may grow if an append option would cause
  an overflow.
-
-
-Two types of vstrings exist: those that are dynamically backed, and those
-backed by a statically allocated buffer (perhaps on a stack).
 
 ### Initialization
 
