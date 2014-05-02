@@ -28,30 +28,58 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "vstring.h"
+
+static uint32_t allocs, reallocs, frees;
+
+void *
+tmalloc(size_t s)
+{
+
+	allocs++;
+	return calloc(1, s);
+}
+
+void *
+trealloc(void *p, size_t s)
+{
+
+	reallocs++;
+	return realloc(p, s);
+}
+
+void
+tfree(void *p)
+{
+
+	frees++;
+	free(p);
+}
 
 int
 main(void)
 {
 	char sbuf[16], *buf;
+	vstring_malloc vm;
 	vstring *vs;
 
 	vs = NULL;
-	vs = vs_init(vs, VS_TYPE_STATIC, sbuf, 16);
+	vs = vs_init(vs, NULL, VS_TYPE_STATIC, sbuf, 16);
 	assert(vs_pushstr(vs, "1234567890123456", 16));
 	assert(vs_finalize(vs) == false);
 	vs_deinit(vs);
 
 	vs = NULL;
-	vs = vs_init(vs, VS_TYPE_GROWABLE, sbuf, 16);
+	vs = vs_init(vs, NULL, VS_TYPE_GROWABLE, sbuf, 16);
 	assert(vs_pushstr(vs, "1234567890123456", 16));
 	assert(vs_finalize(vs));
 	assert(vs->size == 32);
 	vs_deinit(vs);
 
 	vs = NULL;
-	vs = vs_init(vs, VS_TYPE_DYNAMIC, NULL, 0);
+	vs = vs_init(vs, NULL, VS_TYPE_DYNAMIC, NULL, 0);
 	assert(vs_push(vs, 'a'));
 	assert(vs_pushstr(vs, "bc", 2));
 	assert(vs_pushuint(vs, 10));
@@ -65,6 +93,22 @@ main(void)
 	assert(vs_pushdouble(vs, -0.0));
 	assert(vs_finalize(vs));
 	assert(!memcmp(vs_contents(vs), "abc10-11010.123450000NaNinf-inf0.000000000-0.000000000\0", vs_len(vs)));
+	vs_deinit(vs);
+
+	vs = NULL;
+	vm.vs_malloc = tmalloc;
+	vm.vs_realloc = trealloc;
+	vm.vs_free = tfree;
+	vs = vs_init(vs, &vm, VS_TYPE_DYNAMIC, NULL, 0);
+	assert(vs_push(vs, 'a'));
+	assert(vs_push(vs, 'b'));
+	for (int i = vs_len(vs); i < 257; i++) {
+		vs_push(vs, 'a');
+	}
+	vs_deinit(vs);
+	assert(allocs == 2);
+	assert(reallocs == 1);
+	assert(frees == 1);
 
 	return 0;
 }

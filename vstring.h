@@ -34,12 +34,20 @@
 #include <string.h>
 #include <math.h>
 
+typedef struct vstring_malloc {
+	void		*(*vs_malloc)(size_t);
+	void		*(*vs_realloc)(void *, size_t);
+	void		(*vs_free)(void *);
+} vstring_malloc;
+
 typedef struct vstring {
 	char		*contents;
 	uint32_t	type;
 	uint32_t	flags;
 	uint64_t	pointer;
 	uint64_t	size;
+	vstring_malloc	vm;
+	char		vs___pad[8];
 } vstring;
 
 enum {
@@ -57,12 +65,17 @@ enum vstring_flags {
 };
 
 static inline vstring *
-vs_init(vstring *vs, enum vstring_type type, char *buf, size_t size)
+vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
+    size_t size)
 {
 
 	if ((type & VS_TYPE_DYNAMIC)) {
 		if (vs == NULL) {
-			vs = calloc(1, sizeof (*vs));
+			if (vm != NULL) {
+				vs = vm->vs_malloc(sizeof (*vs));
+			} else {
+				vs = calloc(1, sizeof (*vs));
+			}
 			vs->flags |= VS_NEEDSFREE;
 		} else {
 			memset(vs, 0, sizeof (*vs));
@@ -82,7 +95,11 @@ vs_init(vstring *vs, enum vstring_type type, char *buf, size_t size)
 		}
 
 		if (vs == NULL) {
-			vs = calloc(1, sizeof (*vs));
+			if (vm != NULL) {
+				vs = vm->vs_malloc(sizeof (*vs));
+			} else {
+				vs = calloc(1, sizeof (*vs));
+			}
 			vs->flags |= VS_NEEDSFREE;
 		} else {
 			memset(vs, 0, sizeof (*vs));
@@ -93,6 +110,14 @@ vs_init(vstring *vs, enum vstring_type type, char *buf, size_t size)
 	}
 
 	vs->type = type;
+	if (vm != NULL) {
+		vs->vm.vs_malloc = vm->vs_malloc;
+		vs->vm.vs_realloc = vm->vs_realloc;
+		vs->vm.vs_free = vm->vs_free;
+	} else {
+		memset(&vs->vm, 0, sizeof (vs->vm));
+	}
+
 	return vs;
 }
 
@@ -101,12 +126,20 @@ vs_deinit(vstring *vs)
 {
 
 	if ((vs->type & VS_TYPE_DYNAMIC) && vs->contents != NULL) {
-		free(vs->contents);
+		if (vs->vm.vs_free) {
+			vs->vm.vs_free(vs->contents);
+		} else {
+			free(vs->contents);
+		}
 	}
 
 	if (vs->flags & VS_NEEDSFREE) {
 		memset(vs, 0, sizeof (*vs));
-		free(vs);
+		if (vs->vm.vs_free) {
+			vs->vm.vs_free(vs);
+		} else {
+			free(vs);
+		}
 	} else {
 		memset(vs, 0, sizeof (*vs));
 	}
@@ -131,7 +164,11 @@ vs_resize(vstring *vs, size_t hint)
 			vs->size = VS_ALLOCSIZE;
 		}
 
-		vs->contents = calloc(1, vs->size);
+		if (vs->vm.vs_malloc) {
+			vs->contents = vs->vm.vs_malloc(vs->size);
+		} else {
+			vs->contents = calloc(1, vs->size);
+		}
 	} else {
 		size_t size = vs->size * 2;
 		if (size < hint) {
@@ -146,10 +183,19 @@ vs_resize(vstring *vs, size_t hint)
 			vs->type &= ~VS_TYPE_GROWABLE;
 			vs->type |= VS_TYPE_DYNAMIC;
 
-			vs->contents = calloc(1, size);
+			if (vs->vm.vs_malloc) {
+				printf("WTF\n");
+				vs->contents = vs->vm.vs_malloc(size);
+			} else {
+				vs->contents = calloc(1, size);
+			}
 			vs->size = size;
 		} else if ((vs->type & VS_TYPE_DYNAMIC)) {
-			tmp = realloc(vs->contents, size * 2);
+			if (vs->vm.vs_realloc) {
+				tmp = vs->vm.vs_realloc(vs->contents, size * 2);
+			} else {
+				tmp = realloc(vs->contents, size * 2);
+			}
 			if (tmp != NULL) {
 				vs->contents = tmp;
 				vs->size = size;

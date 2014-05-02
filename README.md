@@ -67,11 +67,26 @@ Three sorts of `vstring`s exist:
  dynamically allocated buffer and may grow if an append option would cause
  an overflow.
 
+### Allocation
+
+```c
+typedef struct vstring_malloc {
+	void		*(*vs_malloc)(size_t);
+	void		*(*vs_realloc)(void *, size_t);
+	void		(*vs_free)(void *);
+} vstring_malloc;
+```
+
+The `vstring_malloc` type provides a means for using a custom memory
+allocator that may not be accessible through the `malloc(3)` API linked into
+the program.
+
 ### Initialization
 
 ```c
 static inline vstring *
-vs_init(vstring *vs, enum vstring_type type, char *buf, size_t size)
+vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
+    size_t size)
 ```
 
 A `vstring` is initialized by calling `vs_init` with the proper arguments.
@@ -79,11 +94,18 @@ If the first argument is `NULL`, the `vstring` itself will be dynamically
 allocated. It is legal to pass a pointer to a statically allocated
 `vstring` of type `VS_TYPE_DYNAMIC`.
 
+The `vstring_malloc` argument, if non-`NULL`, provides pointers to a
+set of `malloc(3)`, `realloc(3)`, and `free(3)`-compatible functions that are
+used to allocate the vstring (if needed) and its underlying buffer. If this
+argument is `NULL`, the library uses `calloc(3)`, `realloc(3)`, and `free(3)`
+directly.
+
 The `buf` and `size` arguments are useful when `vs_init` is called to
 initialize a `VS_TYPE_STATIC` or `VS_TYPE_GROWABLE` `vstring`, but also
 allow passing in an externally allocated buffer with a known size into a
 `vstring` of type `VS_TYPE_DYNAMIC`. Note that such a buffer must have
-been allocated with the same `malloc(3)` available to `vstring`.
+been allocated with the same `malloc(3)` available to `vstring` (and must
+therefore be the same allocator passed through `vstring_malloc`, if any).
 
 ### Destruction
 
