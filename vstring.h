@@ -175,20 +175,18 @@ vs_resize(vstring *vs, size_t hint)
 			size = hint * 2;
 		}
 
-		if ((vs->type & VS_TYPE_STATIC)) {
-			/* Static-backed assets cannot be resized */
-			return NULL;
-		} else if ((vs->type & VS_TYPE_GROWABLE)) {
+		if ((vs->type & VS_TYPE_GROWABLE)) {
 			/* Upgrade to a dynamic string. */
-			vs->type &= ~VS_TYPE_GROWABLE;
-			vs->type |= VS_TYPE_DYNAMIC;
+			vs->type = VS_TYPE_DYNAMIC;
 
 			if (vs->vm.vs_malloc) {
-				printf("WTF\n");
-				vs->contents = vs->vm.vs_malloc(size);
+				tmp = vs->vm.vs_malloc(size);
 			} else {
-				vs->contents = calloc(1, size);
+				tmp = calloc(1, size);
 			}
+
+			memcpy(tmp, vs->contents, vs->size);
+			vs->contents = tmp;
 			vs->size = size;
 		} else if ((vs->type & VS_TYPE_DYNAMIC)) {
 			if (vs->vm.vs_realloc) {
@@ -200,6 +198,12 @@ vs_resize(vstring *vs, size_t hint)
 				vs->contents = tmp;
 				vs->size = size;
 			}
+		} else if ((vs->type & VS_TYPE_STATIC)) {
+			/*
+			 * VS_TYPE_STATIC strings that do not also have
+			 * VS_TYPE_GROWABLE set cannot be resized.
+			 */
+			return NULL;
 		}
 	}
 

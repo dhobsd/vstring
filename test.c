@@ -76,6 +76,15 @@ main(void)
 	assert(vs_pushstr(vs, "1234567890123456", 16));
 	assert(vs_finalize(vs));
 	assert(vs->size == 32);
+	assert(!memcmp(vs_contents(vs), "1234567890123456\0", 17));
+	vs_deinit(vs);
+
+	vs = NULL;
+	vs = vs_init(vs, NULL, VS_TYPE_STATIC | VS_TYPE_GROWABLE, sbuf, 16);
+	assert(vs_pushstr(vs, "1234567890123456", 16));
+	assert(vs_finalize(vs));
+	assert(vs->size == 32);
+	assert(!memcmp(vs_contents(vs), "1234567890123456\0", 17));
 	vs_deinit(vs);
 
 	vs = NULL;
