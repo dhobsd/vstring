@@ -72,9 +72,9 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 	if ((type & VS_TYPE_DYNAMIC)) {
 		if (vs == NULL) {
 			if (vm != NULL) {
-				vs = vm->vs_malloc(sizeof (*vs));
+				vs = (vstring *)vm->vs_malloc(sizeof (*vs));
 			} else {
-				vs = calloc(1, sizeof (*vs));
+				vs = (vstring *)calloc(1, sizeof (*vs));
 			}
 			vs->flags |= VS_NEEDSFREE;
 		} else {
@@ -96,9 +96,9 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 
 		if (vs == NULL) {
 			if (vm != NULL) {
-				vs = vm->vs_malloc(sizeof (*vs));
+				vs = (vstring *)vm->vs_malloc(sizeof (*vs));
 			} else {
-				vs = calloc(1, sizeof (*vs));
+				vs = (vstring *)calloc(1, sizeof (*vs));
 			}
 			vs->flags |= VS_NEEDSFREE;
 		} else {
@@ -165,9 +165,9 @@ vs_resize(vstring *vs, size_t hint)
 		}
 
 		if (vs->vm.vs_malloc) {
-			vs->contents = vs->vm.vs_malloc(vs->size);
+			vs->contents = (char *)vs->vm.vs_malloc(vs->size);
 		} else {
-			vs->contents = calloc(1, vs->size);
+			vs->contents = (char *)calloc(1, vs->size);
 		}
 	} else {
 		size_t size = vs->size * 2;
@@ -180,9 +180,9 @@ vs_resize(vstring *vs, size_t hint)
 			vs->type = VS_TYPE_DYNAMIC;
 
 			if (vs->vm.vs_malloc) {
-				tmp = vs->vm.vs_malloc(size);
+				tmp = (char *)vs->vm.vs_malloc(size);
 			} else {
-				tmp = calloc(1, size);
+				tmp = (char *)calloc(1, size);
 			}
 
 			memcpy(tmp, vs->contents, vs->size);
@@ -190,9 +190,9 @@ vs_resize(vstring *vs, size_t hint)
 			vs->size = size;
 		} else if ((vs->type & VS_TYPE_DYNAMIC)) {
 			if (vs->vm.vs_realloc) {
-				tmp = vs->vm.vs_realloc(vs->contents, size * 2);
+				tmp = (char *)vs->vm.vs_realloc(vs->contents, size * 2);
 			} else {
-				tmp = realloc(vs->contents, size * 2);
+				tmp = (char *)realloc(vs->contents, size * 2);
 			}
 			if (tmp != NULL) {
 				vs->contents = tmp;
