@@ -34,6 +34,17 @@
 #include <string.h>
 #include <math.h>
 
+#ifndef vstring_inline
+#  if defined(_MSC_VER) || defined(__BORLANDC__) || \
+  defined(__DMC__) || defined(__SC__) || \
+  defined(__WATCOMC__) || defined(__LCC__) || \
+  defined(__DECC) || defined(__EABI__)
+#    define vstring_inline __inline
+#  else
+#    define vstring_inline inline
+#  endif
+#endif
+
 typedef struct vstring_malloc {
 	void		*(*vs_malloc)(size_t);
 	void		*(*vs_realloc)(void *, size_t);
@@ -64,7 +75,7 @@ enum vstring_flags {
 	VS_NEEDSFREE	= 1, /* Set if the API needs to free the vs itself */
 };
 
-static inline vstring *
+static vstring_inline vstring *
 vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
     size_t size)
 {
@@ -123,7 +134,7 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 	return vs;
 }
 
-static inline void
+static vstring_inline void
 vs_deinit(vstring *vs)
 {
 
@@ -147,14 +158,14 @@ vs_deinit(vstring *vs)
 	}
 }
 
-static inline void
+static vstring_inline void
 vs_rewind(vstring *vs)
 {
 
 	vs->pointer = 0;
 }
 
-static inline void *
+static vstring_inline void *
 vs_resize(vstring *vs, size_t hint)
 {
 	char *tmp;
@@ -213,7 +224,7 @@ vs_resize(vstring *vs, size_t hint)
 	return vs->contents;
 }
 
-static inline bool
+static vstring_inline bool
 vs_push(vstring *vs, char c)
 {
 
@@ -227,7 +238,7 @@ vs_push(vstring *vs, char c)
 	return true;
 }
 
-static inline bool
+static vstring_inline bool
 vs_pushstr(vstring *vs, const char *s, uint64_t len)
 {
 
@@ -246,7 +257,7 @@ vs_pushstr(vstring *vs, const char *s, uint64_t len)
 	return true;
 }
 
-static inline bool
+static vstring_inline bool
 vs_pushuint(vstring *vs, uint64_t n)
 {
 	char buf[20];
@@ -274,7 +285,7 @@ vs_pushuint(vstring *vs, uint64_t n)
 	}
 }
 
-static inline bool
+static vstring_inline bool
 vs_pushint(vstring *vs, int64_t n)
 {
 	char buf[21];
@@ -311,7 +322,7 @@ vs_pushint(vstring *vs, int64_t n)
 	}
 }
 
-static inline bool
+static vstring_inline bool
 vs_padint(vstring *vs, uint64_t n, int places)
 {
 	char buf[20];
@@ -345,7 +356,7 @@ vs_padint(vstring *vs, uint64_t n, int places)
 	return vs_pushstr(vs, buf, l + 1);
 }
 
-static inline bool
+static vstring_inline bool
 vs_pushdouble(vstring *vs, double n)
 {
 	double modf_int, modf_frac;
@@ -381,21 +392,21 @@ vs_pushdouble(vstring *vs, double n)
 	}
 }
 
-static inline bool
+static vstring_inline bool
 vs_finalize(vstring *vs)
 {
 
 	return vs_push(vs, '\0');
 }
 
-static inline char *
+static vstring_inline char *
 vs_contents(vstring *vs)
 {
 
 	return vs->contents;
 }
 
-static inline uint64_t
+static vstring_inline uint64_t
 vs_len(vstring *vs)
 {
 
