@@ -73,6 +73,7 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 		if (vs == NULL) {
 			if (vm != NULL) {
 				vs = vm->vs_malloc(sizeof (*vs));
+				memset(vs, 0, sizeof (*vs));
 			} else {
 				vs = calloc(1, sizeof (*vs));
 			}
@@ -97,6 +98,7 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 		if (vs == NULL) {
 			if (vm != NULL) {
 				vs = vm->vs_malloc(sizeof (*vs));
+				memset(vs, 0, sizeof (*vs));
 			} else {
 				vs = calloc(1, sizeof (*vs));
 			}

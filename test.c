@@ -38,8 +38,10 @@ void *
 tmalloc(size_t s)
 {
 
+	void *m = malloc(s);
 	allocs++;
-	return calloc(1, s);
+	memset(m, 0xA, s);
+	return m;
 }
 
 void *
@@ -109,6 +111,11 @@ main(void)
 	vm.vs_realloc = trealloc;
 	vm.vs_free = tfree;
 	vs = vs_init(vs, &vm, VS_TYPE_DYNAMIC, NULL, 0);
+	assert(vs->type == 1);
+	assert(vs->flags == VS_NEEDSFREE);
+	assert(vs_len(vs) == 0);
+	assert(vs_contents(vs) == NULL);
+	assert(vs->size == 0);
 	assert(vs_push(vs, 'a'));
 	assert(vs_push(vs, 'b'));
 	for (int i = vs_len(vs); i < 257; i++) {
