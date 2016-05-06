@@ -63,7 +63,7 @@ tfree(void *p)
 int
 main(void)
 {
-	char sbuf[16], *buf;
+	char sbuf[16];
 	vstring_malloc vm;
 	vstring *vs;
 

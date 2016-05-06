@@ -25,8 +25,8 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef _VSTRING_H_
-#define _VSTRING_H_
+#ifndef VSTRING_H_
+#define VSTRING_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -55,12 +55,12 @@ enum vstring_type {
 	VS_TYPE_DYNAMIC		= 1,
 	VS_TYPE_STATIC		= 1 << 1,
 	VS_TYPE_GROWABLE	= 1 << 2,
-	VS_TYPE_MAX		= 0xffffffff,
+	VS_TYPE_MAX		= 0x7fffffff,
 };
 
 enum vstring_flags {
 	VS_NEEDSFREE	= 1, /* Set if the API needs to free the vs itself */
-	VS_FLAG_MAX	= 0xffffffff,
+	VS_FLAG_MAX	= 0x7fffffff,
 };
 
 typedef struct vstring {
