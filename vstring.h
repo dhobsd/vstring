@@ -1,7 +1,7 @@
 /*
  * vstring: https://github.com/dhobsd/vstring
  *
- * Copyright 2003-2013 Devon H. O'Dell <devon.odell@gmail.com>
+ * Copyright 2003-2016 Devon H. O'Dell <devon.odell@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,28 +51,30 @@ typedef struct vstring_malloc {
 	void		(*vs_free)(void *);
 } vstring_malloc;
 
-typedef struct vstring {
-	char		*contents;
-	uint32_t	type;
-	uint32_t	flags;
-	uint64_t	pointer;
-	uint64_t	size;
-	vstring_malloc	vm;
-	char		vs___pad[8];
-} vstring;
-
-enum {
-	VS_ALLOCSIZE = 256,
-};
-
 enum vstring_type {
 	VS_TYPE_DYNAMIC		= 1,
 	VS_TYPE_STATIC		= 1 << 1,
 	VS_TYPE_GROWABLE	= 1 << 2,
+	VS_TYPE_MAX		= 0xffffffff,
 };
 
 enum vstring_flags {
 	VS_NEEDSFREE	= 1, /* Set if the API needs to free the vs itself */
+	VS_FLAG_MAX	= 0xffffffff,
+};
+
+typedef struct vstring {
+	char			*contents;
+	enum vstring_type	type;
+	enum vstring_flags	flags;
+	uint64_t		pointer;
+	uint64_t		size;
+	vstring_malloc		vm;
+	char			vs___pad[8];
+} vstring;
+
+enum {
+	VS_ALLOCSIZE = 256,
 };
 
 static vstring_inline vstring *
@@ -84,6 +86,9 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 		if (vs == NULL) {
 			if (vm != NULL) {
 				vs = vm->vs_malloc(sizeof (*vs));
+				if (vs == NULL) {
+					return NULL;
+				}
 				memset(vs, 0, sizeof (*vs));
 			} else {
 				vs = calloc(1, sizeof (*vs));
@@ -109,6 +114,9 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 		if (vs == NULL) {
 			if (vm != NULL) {
 				vs = vm->vs_malloc(sizeof (*vs));
+				if (vs == NULL) {
+					return NULL;
+				}
 				memset(vs, 0, sizeof (*vs));
 			} else {
 				vs = calloc(1, sizeof (*vs));
@@ -185,7 +193,7 @@ vs_resize(vstring *vs, size_t hint)
 	} else {
 		size_t size = vs->size * 2;
 		if (size < hint) {
-			size = hint * 2;
+			size = size + hint * 2;
 		}
 
 		if ((vs->type & VS_TYPE_GROWABLE)) {
@@ -203,13 +211,15 @@ vs_resize(vstring *vs, size_t hint)
 			vs->size = size;
 		} else if ((vs->type & VS_TYPE_DYNAMIC)) {
 			if (vs->vm.vs_realloc) {
-				tmp = vs->vm.vs_realloc(vs->contents, size * 2);
+				tmp = vs->vm.vs_realloc(vs->contents, size);
 			} else {
-				tmp = realloc(vs->contents, size * 2);
+				tmp = realloc(vs->contents, size);
 			}
 			if (tmp != NULL) {
 				vs->contents = tmp;
 				vs->size = size;
+			} else {
+				return NULL;
 			}
 		} else if ((vs->type & VS_TYPE_STATIC)) {
 			/*
