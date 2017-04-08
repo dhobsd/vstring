@@ -28,10 +28,12 @@
 #ifndef VSTRING_H_
 #define VSTRING_H_
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <math.h>
 
 #ifndef vstring_inline
@@ -92,14 +94,13 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 				memset(vs, 0, sizeof (*vs));
 			} else {
 				vs = calloc(1, sizeof (*vs));
+				if (vs == NULL) {
+					return NULL;
+				}
 			}
 			vs->flags |= VS_NEEDSFREE;
 		} else {
 			memset(vs, 0, sizeof (*vs));
-		}
-
-		if (vs == NULL) {
-			return NULL;
 		}
 
 		if (buf != NULL && size > 0) {
@@ -107,9 +108,8 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 			vs->size = size;
 		}
 	} else if ((type & VS_TYPE_STATIC) || (type & VS_TYPE_GROWABLE)) {
-		if (buf == NULL || size == 0) {
-			return NULL;
-		}
+		assert(buf != NULL);
+		assert(size > 0);
 
 		if (vs == NULL) {
 			if (vm != NULL) {
@@ -120,6 +120,9 @@ vs_init(vstring *vs, vstring_malloc *vm, enum vstring_type type, char *buf,
 				memset(vs, 0, sizeof (*vs));
 			} else {
 				vs = calloc(1, sizeof (*vs));
+				if (vs == NULL) {
+					return NULL;
+				}
 			}
 			vs->flags |= VS_NEEDSFREE;
 		} else {
@@ -190,6 +193,9 @@ vs_resize(vstring *vs, size_t hint)
 		} else {
 			vs->contents = calloc(1, vs->size);
 		}
+		if (vs->contents == NULL) {
+			return NULL;
+		}
 	} else {
 		size_t size = vs->size * 2;
 		if (size < hint) {
@@ -205,6 +211,9 @@ vs_resize(vstring *vs, size_t hint)
 			} else {
 				tmp = calloc(1, size);
 			}
+			if (tmp == NULL) {
+				return NULL;
+			}
 
 			memcpy(tmp, vs->contents, vs->size);
 			vs->contents = tmp;
@@ -215,12 +224,12 @@ vs_resize(vstring *vs, size_t hint)
 			} else {
 				tmp = realloc(vs->contents, size);
 			}
-			if (tmp != NULL) {
-				vs->contents = tmp;
-				vs->size = size;
-			} else {
+			if (tmp == NULL) {
 				return NULL;
 			}
+
+			vs->contents = tmp;
+			vs->size = size;
 		} else if ((vs->type & VS_TYPE_STATIC)) {
 			/*
 			 * VS_TYPE_STATIC strings that do not also have
@@ -251,8 +260,9 @@ vs_push(vstring *vs, char c)
 static vstring_inline bool
 vs_pushstr(vstring *vs, const char *s, uint64_t len)
 {
+	assert(s != NULL);
 
-	if (s == NULL || len == 0) {
+	if (len == 0) {
 		return false;
 	}
 
